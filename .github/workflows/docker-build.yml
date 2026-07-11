@@ -1,0 +1,110 @@
+name: Docker Build
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  push:
+    tags: ["v*"]
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+
+    # Só prossegue se o CI tiver passado (em push para main)
+    # Tags v* ignoram essa condição e constroem independentemente
+    if: >
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+      || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v'))
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── Backend ──────────────────────────────────────────────
+
+      - name: Extract metadata for Backend
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/backend
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=ref,event=branch
+            type=sha,format=long
+
+      - name: Build & Push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test — Backend
+        run: |
+          docker run --rm -d \
+            -p 3001:3001 \
+            -e NODE_ENV=production \
+            -e PORT=3001 \
+            -e DATABASE_URL=postgresql://user:pass@localhost:5432/cms \
+            -e JWT_SECRET=smoke-test-secret-key-that-is-long-enough-for-hs256!! \
+            --name smoke-backend \
+            ghcr.io/${{ github.repository }}/backend:${{ steps.meta-backend.outputs.version || 'main' }}
+          sleep 3
+          curl -sf http://localhost:3001/health > /dev/null \
+            && echo "✅ Backend smoke test passed" \
+            || { echo "❌ Backend smoke test failed"; docker stop smoke-backend; exit 1; }
+          docker stop smoke-backend
+
+      # ── Frontend ─────────────────────────────────────────────
+
+      - name: Extract metadata for Frontend
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/frontend
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=ref,event=branch
+            type=sha,format=long
+
+      - name: Build & Push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test — Frontend
+        run: |
+          docker run --rm -d \
+            -p 3000:3000 \
+            -e NODE_ENV=production \
+            -e NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1 \
+            -e API_URL=http://localhost:3001/api/v1 \
+            --name smoke-frontend \
+            ghcr.io/${{ github.repository }}/frontend:${{ steps.meta-frontend.outputs.version || 'main' }}
+          sleep 5
+          curl -sf http://localhost:3000 > /dev/null \
+            && echo "✅ Frontend smoke test passed" \
+            || { echo "❌ Frontend smoke test failed"; docker stop smoke-frontend; exit 1; }
+          docker stop smoke-frontend

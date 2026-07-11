@@ -1,0 +1,60 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - DATABASE_URL=postgresql://user:pass@db:5432/cms
+      - JWT_SECRET=dev-secret-key-min-32-chars-long-for-hs256!!
+      - JWT_EXPIRES_IN=15m
+      - JWT_REFRESH_EXPIRES_IN=7d
+      - CORS_ORIGIN=http://localhost:3000
+      - LOG_LEVEL=debug
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
+      - NEXT_PUBLIC_SITE_URL=http://localhost:3000
+      - API_URL=http://backend:3001/api/v1
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/next.config.ts:/app/next.config.ts
+      - ./frontend/tsconfig.json:/app/tsconfig.json
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_DB=cms
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d cms"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db_data:

@@ -1,0 +1,57 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3001:3001"
+    env_file:
+      - ./backend/.env.docker
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
+      - NEXT_PUBLIC_SITE_URL=http://localhost:3000
+      - NEXT_PUBLIC_PORTAL_NAME=Portal NTB
+      - NEXT_PUBLIC_PORTAL_TAGLINE=O seu jornal digital
+      - NEXT_PUBLIC_PORTAL_DESCRIPTION=Portal de notícias — informação com credibilidade
+      - API_URL=http://backend:3001/api/v1
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/next.config.ts:/app/next.config.ts
+      - ./frontend/postcss.config.mjs:/app/postcss.config.mjs
+      - ./frontend/tsconfig.json:/app/tsconfig.json
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_DB=cms
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d cms"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db_data:

@@ -1,0 +1,60 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: ["Docker Build"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ─────────────────────────────────────────────────────────
+      # 🔧 PARA ATIVAR O DEPLOY:
+      # 1. Configure os secrets no GitHub:
+      #    - DEPLOY_HOST (IP ou hostname do servidor)
+      #    - DEPLOY_USER (ex: root ou deploy)
+      #    - DEPLOY_SSH_KEY (chave privada)
+      #    - E as variáveis de ambiente da aplicação:
+      #      DATABASE_URL, JWT_SECRET, CORS_ORIGIN,
+      #      R2_ENDPOINT, R2_ACCESS_KEY, R2_SECRET_KEY
+      #
+      # 2. Remova o if: "false" abaixo
+      #
+      # 3. O servidor precisa ter Docker + Docker Compose instalados
+      # ─────────────────────────────────────────────────────────
+      - name: 🚧 Deploy desativado — ative quando tiver servidor
+        if: false
+        run: echo "Deploy workflow está preparado mas desativado."
+
+      # - name: Setup SSH
+      #   uses: webfactory/ssh-agent@v0.9.0
+      #   with:
+      #     ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+      #
+      # - name: Add host to known_hosts
+      #   run: |
+      #     mkdir -p ~/.ssh
+      #     ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+      #
+      # - name: Deploy via Docker Compose
+      #   run: |
+      #     ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} '
+      #       cd /opt/appnews &&
+      #       docker compose -f docker-compose.prod.yml pull &&
+      #       docker compose -f docker-compose.prod.yml up -d --remove-orphans &&
+      #       docker image prune -f
+      #     '
+      #
+      # - name: Health check remoto
+      #   run: |
+      #     sleep 10
+      #     curl -sf https://api.portal.exemplo.com/health \
+      #       && echo "✅ Deploy verificado com sucesso" \
+      #       || echo "⚠️  Health check falhou — verifique o servidor manualmente"

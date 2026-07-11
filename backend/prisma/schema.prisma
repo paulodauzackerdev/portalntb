@@ -1,0 +1,247 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Portal (Multi-Tenant Root) ───────────────────────────────────
+model Portal {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  slug        String   @unique
+  domain      String?
+  logo        String?
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  users      User[]
+  news       News[]
+  categories Category[]
+  tags       Tag[]
+  images     Image[]
+  banners    Banner[]
+
+  @@map("portals")
+}
+
+// ─── Role ─────────────────────────────────────────────────────────
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique // ADMIN, EDITOR, JOURNALIST
+  description String?
+  permissions Json?    // Array de permissões
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  users User[]
+
+  @@map("roles")
+}
+
+// ─── User ─────────────────────────────────────────────────────────
+model User {
+  id          String    @id @default(uuid()) @db.Uuid
+  email       String    @unique
+  password    String
+  name        String
+  avatar      String?
+  roleId      String    @map("role_id") @db.Uuid
+  portalId    String    @map("portal_id") @db.Uuid
+  active      Boolean   @default(true)
+  lastLoginAt DateTime? @map("last_login_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  role          Role           @relation(fields: [roleId], references: [id])
+  portal        Portal         @relation(fields: [portalId], references: [id])
+  news          News[]
+  refreshTokens RefreshToken[]
+  images        Image[]
+
+  @@index([portalId])
+  @@index([roleId])
+  @@map("users")
+}
+
+// ─── RefreshToken ─────────────────────────────────────────────────
+model RefreshToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
+}
+
+// ─── Category ─────────────────────────────────────────────────────
+model Category {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String
+  description String?
+  parentId    String?   @map("parent_id") @db.Uuid
+  portalId    String    @map("portal_id") @db.Uuid
+  order       Int       @default(0)
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  portal   Portal    @relation(fields: [portalId], references: [id])
+  parent   Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+  news     News[]
+
+  @@unique([slug, portalId])
+  @@index([portalId])
+  @@index([slug, portalId])
+  @@map("categories")
+}
+
+// ─── Tag ──────────────────────────────────────────────────────────
+model Tag {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String
+  portalId  String   @map("portal_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  portal    Portal     @relation(fields: [portalId], references: [id])
+  newsTags  NewsTag[]
+
+  @@unique([slug, portalId])
+  @@index([portalId])
+  @@map("tags")
+}
+
+// ─── News ─────────────────────────────────────────────────────────
+model News {
+  id              String    @id @default(uuid()) @db.Uuid
+  title           String
+  slug            String
+  excerpt         String?
+  content         String
+  coverImage      String?   @map("cover_image")
+  coverImageKey   String?   @map("cover_image_key")
+  coverImageAlt   String?   @map("cover_image_alt")
+  status          Status    @default(DRAFT)
+  publishedAt     DateTime? @map("published_at")
+  authorId        String    @map("author_id") @db.Uuid
+  categoryId      String    @map("category_id") @db.Uuid
+  portalId        String    @map("portal_id") @db.Uuid
+  views           Int       @default(0)
+  seoTitle        String?   @map("seo_title")
+  seoDescription  String?   @map("seo_description")
+  seoKeywords     String?   @map("seo_keywords")
+  ogImage         String?   @map("og_image")
+  canonicalUrl    String?   @map("canonical_url")
+  isFeatured      Boolean   @default(false) @map("is_featured")
+  isBreaking      Boolean   @default(false) @map("is_breaking")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  author   User     @relation(fields: [authorId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
+  portal   Portal   @relation(fields: [portalId], references: [id])
+  newsTags NewsTag[]
+
+  @@unique([slug, portalId])
+  @@index([portalId])
+  @@index([slug, portalId])
+  @@index([status])
+  @@index([publishedAt])
+  @@index([authorId])
+  @@index([categoryId])
+  @@index([isFeatured])
+  @@index([isBreaking])
+  @@map("news")
+}
+
+enum Status {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+// ─── NewsTag (Many-to-Many) ───────────────────────────────────────
+model NewsTag {
+  newsId    String   @map("news_id") @db.Uuid
+  tagId     String   @map("tag_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  news News @relation(fields: [newsId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([newsId, tagId])
+  @@map("news_tags")
+}
+
+// ─── Image ────────────────────────────────────────────────────────
+model Image {
+  id           String   @id @default(uuid()) @db.Uuid
+  url          String
+  key          String   @unique
+  thumbnailUrl String?  @map("thumbnail_url")
+  alt          String?
+  caption      String?
+  size         Int
+  mimeType     String   @map("mime_type")
+  width        Int?
+  height       Int?
+  uploadedById String?   @map("uploaded_by") @db.Uuid
+  portalId     String   @map("portal_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  uploadedBy User?  @relation(fields: [uploadedById], references: [id])
+  portal     Portal @relation(fields: [portalId], references: [id])
+
+  @@index([portalId])
+  @@index([uploadedById])
+  @@map("images")
+}
+
+// ─── Banner (Anúncio 728x90) ─────────────────────────────────────
+model Banner {
+  id         String    @id @default(uuid()) @db.Uuid
+  imageKey   String    @map("image_key")
+  imageUrl   String    @map("image_url")
+  alt        String?
+  linkUrl    String?   @map("link_url")
+  active     Boolean   @default(true)
+  portalId   String    @map("portal_id") @db.Uuid
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  portal     Portal        @relation(fields: [portalId], references: [id])
+  clicks     BannerClick[]
+
+  @@index([portalId])
+  @@index([active])
+  @@map("banners")
+}
+
+// ─── BannerClick (Registro individual de clique) ────────────────
+model BannerClick {
+  id        String   @id @default(uuid()) @db.Uuid
+  bannerId  String   @map("banner_id") @db.Uuid
+  ip        String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  banner Banner @relation(fields: [bannerId], references: [id], onDelete: Cascade)
+
+  @@index([bannerId, createdAt])
+  @@index([bannerId, ip, createdAt])
+  @@map("banner_clicks")
+}
