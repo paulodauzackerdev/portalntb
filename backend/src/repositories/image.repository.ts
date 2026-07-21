@@ -21,12 +21,30 @@ export class ImageRepository implements IImageRepository {
     });
   }
 
+  async findById(id: string) {
+    return prisma.image.findUnique({ where: { id } });
+  }
+
   async findByPortal(portalId: string) {
     return prisma.image.findMany({
       where: { portalId },
       orderBy: { createdAt: "desc" },
       take: 50,
     });
+  }
+
+  async update(id: string, data: { alt?: string | null; caption?: string | null }) {
+    return prisma.image.update({
+      where: { id },
+      data: {
+        ...(data.alt !== undefined && { alt: data.alt }),
+        ...(data.caption !== undefined && { caption: data.caption }),
+      },
+    });
+  }
+
+  async delete(id: string) {
+    return prisma.image.delete({ where: { id } });
   }
 }
 

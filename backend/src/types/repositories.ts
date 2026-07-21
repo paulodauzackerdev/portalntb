@@ -121,5 +121,8 @@ export interface IImageRepository {
     uploadedById: string;
     portalId: string;
   }): Promise<Prisma.ImageGetPayload<{}>>;
+  findById(id: string): Promise<Prisma.ImageGetPayload<{}> | null>;
   findByPortal(portalId: string): Promise<Prisma.ImageGetPayload<{}>[]>;
+  update(id: string, data: { alt?: string | null; caption?: string | null }): Promise<Prisma.ImageGetPayload<{}>>;
+  delete(id: string): Promise<Prisma.ImageGetPayload<{}>>;
 }

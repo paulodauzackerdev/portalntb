@@ -24,4 +24,26 @@ export async function uploadRoutes(app: FastifyInstance) {
     preHandler: [authenticate],
     handler: uploadController.list.bind(uploadController),
   });
+
+  // PATCH /upload/images/:id - Atualizar alt/caption da imagem
+  app.patch("/images/:id", {
+    schema: {
+      tags: ["Upload"],
+      description: "Atualizar alt e caption de uma imagem",
+      security: [{ bearerAuth: [] }],
+    },
+    preHandler: [authenticate],
+    handler: uploadController.updateImage.bind(uploadController),
+  });
+
+  // DELETE /upload/images/:id - Deletar imagem (R2 + banco)
+  app.delete("/images/:id", {
+    schema: {
+      tags: ["Upload"],
+      description: "Remover imagem do storage e banco de dados",
+      security: [{ bearerAuth: [] }],
+    },
+    preHandler: [authenticate],
+    handler: uploadController.deleteImage.bind(uploadController),
+  });
 }

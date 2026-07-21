@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import { presignedUploadSchema } from "../schemas";
+import { presignedUploadSchema, updateImageSchema, imageIdParams } from "../schemas";
 import { sendSuccess, requireAuth } from "../utils";
 import type { IImageRepository } from "../types/repositories";
 import type { UploadService } from "../services/upload.service";
@@ -42,10 +42,31 @@ export class UploadController {
       id: img.id,
       url: storageProvider.getPublicUrl(img.key || img.url),
       key: img.key,
+      alt: img.alt,
+      caption: img.caption,
       size: img.size,
       mimeType: img.mimeType,
       created_at: img.createdAt,
     })));
+  }
+
+  async updateImage(request: FastifyRequest, reply: FastifyReply) {
+    const { id } = imageIdParams.parse(request.params);
+    const data = updateImageSchema.parse(request.body);
+    const user = requireAuth(request);
+
+    const result = await this.uploadService.updateImage(id, data, user.id, user.role);
+
+    return sendSuccess(reply, result);
+  }
+
+  async deleteImage(request: FastifyRequest, reply: FastifyReply) {
+    const { id } = imageIdParams.parse(request.params);
+    const user = requireAuth(request);
+
+    const result = await this.uploadService.deleteImage(id, user.id, user.role);
+
+    return sendSuccess(reply, result);
   }
 }
 

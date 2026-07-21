@@ -3,7 +3,7 @@ export { createNewsSchema, updateNewsSchema, newsQuerySchema } from "./news.sche
 export { createCategorySchema, updateCategorySchema } from "./category.schema";
 export { createTagSchema, updateTagSchema } from "./tag.schema";
 export { createUserSchema, updateUserSchema, updateProfileSchema, changePasswordSchema } from "./user.schema";
-export { presignedUploadSchema } from "./upload.schema";
+export { presignedUploadSchema, updateImageSchema, imageIdParams } from "./upload.schema";
 
 export type {
   CreateNewsInput,
@@ -24,4 +24,7 @@ export type {
   UpdateProfileInput,
   ChangePasswordInput,
 } from "./user.schema";
-export type { PresignedUploadInput } from "./upload.schema";
+export type {
+  PresignedUploadInput,
+  UpdateImageInput,
+} from "./upload.schema";
