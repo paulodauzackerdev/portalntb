@@ -1,36 +1,184 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend — CMS Portal NTB
 
-## Getting Started
+Frontend em Next.js 16 + React 19 para CMS de notícias multiportal.
 
-First, run the development server:
+## Stack
+
+| Tecnologia | Versão | Uso |
+|---|---|---|
+| **Next.js** | 16.x | Framework (App Router, SSR, ISR) |
+| **React** | 19.x | UI (Server + Client Components) |
+| **TypeScript** | 5.x | Tipagem |
+| **Tailwind CSS** | v4 | Estilização utility-first |
+| **TanStack Query** | 5.x | Server state / cache |
+| **React Hook Form** | 7.x | Formulários |
+| **TipTap** | 3.x | Editor rich-text (ProseMirror) |
+| **Framer Motion** | 12.x | Animações |
+| **Lucide React** | — | Ícones |
+| **Zod** | 4.x | Validação |
+| **date-fns** | 4.x | Datas (locale pt-BR) |
+| **DOMPurify** | 3.x | Sanitização XSS (cliente) |
+| **Radix UI** | — | Componentes headless acessíveis |
+| **shadcn/ui** | — | Componentes de UI |
+
+## Primeiros passos
 
 ```bash
+# Instalar dependências
+npm install
+
+# Copiar variáveis de ambiente
+cp .env.example .env  # e preencher
+
+# Iniciar desenvolvimento
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Acessar em `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Estrutura
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/
+│   ├── (public)/              # Site público (SSR + ISR)
+│   │   ├── page.tsx           # Homepage
+│   │   ├── layout.tsx         # Layout público (Header + Footer)
+│   │   ├── hero-section.tsx   # Seção hero com Framer Motion
+│   │   ├── noticias/[slug]/   # Página de notícia
+│   │   ├── categorias/[slug]/ # Listagem por categoria
+│   │   ├── tags/[slug]/       # Listagem por tag
+│   │   ├── busca/             # Página de busca
+│   │   ├── rss/route.ts       # Feed RSS
+│   │   └── sitemap.xml/route.ts
+│   ├── (admin)/               # Painel administrativo (protegido)
+│   │   ├── layout.tsx         # AdminLayout com sidebar
+│   │   ├── dashboard/
+│   │   ├── noticias/          # Listagem, novo, editar
+│   │   ├── categorias/
+│   │   ├── tags/
+│   │   ├── usuarios/
+│   │   ├── uploads/           # Galeria com ImageDetailModal
+│   │   ├── banner/
+│   │   ├── configuracoes/
+│   │   └── perfil/
+│   ├── login/                 # Página de login
+│   ├── layout.tsx             # Root layout (fontes, metadata)
+│   ├── providers.tsx          # QueryClient + AuthProvider
+│   └── globals.css            # Tailwind v4 + variáveis CSS
+├── components/
+│   ├── ui/                    # shadcn/ui (20+ componentes)
+│   ├── layouts/               # Header, Footer, AdminLayout, HeaderBanner
+│   └── news/                  # NewsForm, NewsCard, NewsGrid
+├── hooks/                     # React Query hooks
+│   ├── useAuth.ts
+│   ├── useNews.ts
+│   ├── useCategories.ts
+│   ├── useTags.ts
+│   ├── useUpload.ts
+│   ├── useStats.ts
+│   └── useConfirmDialog.tsx
+├── lib/                       # Utilitários e API client
+│   ├── api.ts                 # ApiClient (cliente)
+│   ├── api.server.ts          # apiGet (SSR/ISR)
+│   ├── auth.tsx               # AuthProvider + useAuth
+│   ├── constants.ts           # API_URL, SITE_URL centralizados
+│   ├── utils.ts               # cn(), formatDate(), formatDateTime()
+│   ├── image.ts               # getImageUrl(), getCoverImageUrl()
+│   ├── sanitize.ts            # DOMPurify wrapper
+│   └── categories.server.ts   # Categorias no servidor
+└── types/
+    └── index.ts               # User, NewsItem, Category, Tag, payloads
+```
 
-## Learn More
+## Páginas Públicas
 
-To learn more about Next.js, take a look at the following resources:
+| Rota | Componente | Cache |
+|------|------------|:-----:|
+| `/` | Server Component | ISR (60s) |
+| `/noticias/[slug]` | Server Component + Client (article) | ISR (3600s) |
+| `/categorias/[slug]` | Server Component | ISR (60s) |
+| `/tags/[slug]` | Server Component | ISR (60s) |
+| `/busca` | Client Component | Dinâmico |
+| `/rss` | Route Handler | Dinâmico |
+| `/sitemap.xml` | Route Handler | Dinâmico |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Páginas Admin
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Rota | Descrição |
+|------|-----------|
+| `/dashboard` | Cards de métricas + notícias recentes |
+| `/noticias` | Listagem com DataTable |
+| `/noticias/novo` | Formulário com editor TipTap |
+| `/noticias/[slug]/edit` | Edição de notícia |
+| `/categorias` | CRUD de categorias |
+| `/tags` | CRUD de tags |
+| `/usuarios` | Gerenciamento (admin apenas) |
+| `/uploads` | Galeria de imagens com modal de detalhes |
+| `/banner` | Gerenciamento de banner 728x90 |
+| `/configuracoes` | Configurações do portal |
+| `/perfil` | Perfil do usuário logado |
 
-## Deploy on Vercel
+## Comunicação com API
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```mermaid
+graph LR
+    A[Browser] -->|fetch + JWT| B[Fastify API]
+    C[Next.js Server] -->|fetch sem token| B
+    A --> C[React Query Cache]
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Client Components:** `api.ts` — ApiClient com refresh automático (sessionStorage + cookie httpOnly)
+- **Server Components:** `api.server.ts` — apiGet com timeout de 5s, sem autenticação
+- **Upload:** Presigned URL — browser → Cloudflare R2 (nunca passa pelo servidor)
+
+## Padrões
+
+### Componentes
+- **Server Components** para páginas públicas (SEO, ISR, performance)
+- **Client Components** apenas para interatividade (admin, formulários, animações)
+- Componentes UI (shadcn/ui) em `components/ui/` — reutilizáveis e estilizados com `cn()`
+- Componentes de domínio em suas próprias pastas (`news/`, `layouts/`)
+
+### Data Fetching
+- TanStack Query para cache client-side, com `staleTime: 60s`
+- Mutations invalidam queries relacionadas automaticamente
+- Server Components usam fetch direto com `revalidate` controlado pela página
+
+### Formulários
+- React Hook Form + Zod resolver para validação
+- TipTap para editor rich-text com toolbar personalizada
+- Upload de imagem de capa via presigned URL
+
+### Autenticação
+- AuthProvider com contexto global
+- Access token em sessionStorage (refreshes automáticos via cookie httpOnly)
+- Redirect automático para `/login` se não autenticado
+
+## SEO
+
+Cada página pública gera dinamicamente:
+- Meta tags (title, description, keywords)
+- Open Graph (og:title, og:description, og:image, og:type)
+- Twitter Cards (summary_large_image)
+- JSON-LD (NewsArticle schema)
+- Breadcrumbs com schema.org
+
+## Performance
+
+| Técnica | Onde |
+|---------|------|
+| **ISR** | Homepage (60s), notícias (3600s) |
+| **React Query** | Admin — cache client-side, evita refetch |
+| **Lazy loading** | Imagens em listagens (`loading="lazy"`) |
+| **Priority** | Imagem principal da notícia (`priority`) |
+| **Server Components** | Zero JavaScript no bundle do cliente |
+
+## Scripts
+
+```bash
+npm run dev     # Desenvolvimento (hot reload)
+npm run build   # Build de produção
+npm run start   # Servir build
+npm run lint    # ESLint
+```
