@@ -69,7 +69,7 @@ export class AuthController {
       if (authHeader?.startsWith("Bearer ")) {
         const token = authHeader.slice(7);
         try {
-          const decoded = request.jwt.decode(token) as JwtDecoded | null;
+          const decoded = await request.jwtDecode() as JwtDecoded | null;
           userId = decoded?.id;
         } catch {
           // Não foi possível decodificar
