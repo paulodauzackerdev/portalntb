@@ -75,6 +75,7 @@ export class BannerService {
 
   /**
    * Cria ou atualiza o banner do portal.
+   * Se já existir, deleta a imagem antiga do storage antes de atualizar.
    */
   async upsert(portalId: string, input: UpsertBannerInput): Promise<BannerData> {
     const existing = await prisma.banner.findFirst({
@@ -93,6 +94,7 @@ export class BannerService {
     };
 
     if (existing) {
+      // Apenas atualiza o registro — imagem antiga permanece no R2
       const updated = await prisma.banner.update({
         where: { id: existing.id },
         data,
@@ -105,7 +107,8 @@ export class BannerService {
   }
 
   /**
-   * Remove o banner (deleta do banco e do storage).
+   * Remove o banner, a imagem do R2 e o registro da galeria de uploads.
+   * Os clicks são removidos automaticamente via onDelete: Cascade.
    */
   async delete(portalId: string): Promise<void> {
     const banner = await prisma.banner.findFirst({
@@ -114,9 +117,10 @@ export class BannerService {
     });
     if (!banner) throw notFound("Nenhum banner encontrado");
 
-    // Deletar do R2
+    // Remove a imagem do R2 e da galeria de uploads
     if (banner.imageKey) {
       await storageProvider.delete(banner.imageKey).catch(() => {});
+      await prisma.image.deleteMany({ where: { key: banner.imageKey } }).catch(() => {});
     }
 
     await prisma.banner.delete({ where: { id: banner.id } });

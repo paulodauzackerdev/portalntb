@@ -277,21 +277,30 @@ export class NewsService {
     }
 
     // Deletar imagem antiga do R2 se a capa foi alterada
-    if (data.cover_image_key && data.cover_image_key !== news.coverImageKey && news.coverImageKey) {
-      await storageProvider.delete(news.coverImageKey).catch(() => {});
-    }
+    const oldCoverKey = (data.cover_image_key && data.cover_image_key !== news.coverImageKey && news.coverImageKey)
+      ? news.coverImageKey
+      : null;
 
-    // Atualizar tags
-    if (tag_ids !== undefined) {
-      await prisma.newsTag.deleteMany({ where: { newsId: id } });
-      if (tag_ids.length > 0) {
-        await prisma.newsTag.createMany({
-          data: tag_ids.map((tagId) => ({ newsId: id, tagId })),
-        });
+    // Envolver tudo em transação: R2 + tags + update do banco
+    return prisma.$transaction(async (tx) => {
+      if (oldCoverKey) {
+        await storageProvider.delete(oldCoverKey).catch(() => {});
       }
-    }
 
-    return this.newsRepository.update(id, updateData);
+      if (tag_ids !== undefined) {
+        await tx.newsTag.deleteMany({ where: { newsId: id } });
+        if (tag_ids.length > 0) {
+          await tx.newsTag.createMany({
+            data: tag_ids.map((tagId) => ({ newsId: id, tagId })),
+          });
+        }
+      }
+
+      return tx.news.update({
+        where: { id },
+        data: updateData,
+      });
+    });
   }
 
   async publish(id: string, userId: string, userRole: string) {
@@ -339,12 +348,13 @@ export class NewsService {
       }
     }
 
-    // Deletar imagem do R2 antes de remover a notícia
-    if (news.coverImageKey) {
-      await storageProvider.delete(news.coverImageKey).catch(() => {});
-    }
-
-    return this.newsRepository.delete(id);
+    // Envolver deleção R2 + banco em transação
+    return prisma.$transaction(async (tx) => {
+      if (news.coverImageKey) {
+        await storageProvider.delete(news.coverImageKey).catch(() => {});
+      }
+      return tx.news.delete({ where: { id } });
+    });
   }
 
   async findBySlug(slug: string, portalId: string): Promise<NewsResponse> {
