@@ -3,6 +3,12 @@
 ![Node](https://img.shields.io/badge/node-22.x-339933)
 ![Next.js](https://img.shields.io/badge/next.js-16-black)
 ![Fastify](https://img.shields.io/badge/fastify-5-000000)
+![Health](https://img.shields.io/badge/sa%C3%BAde-6.0%2F10-yellow)
+![Testes](https://img.shields.io/badge/testes-1.0%2F10-red)
+![Arquitetura](https://img.shields.io/badge/arquitetura-7.0%2F10-brightgreen)
+![Prisma](https://img.shields.io/badge/prisma-6-2D3748)
+![PostgreSQL](https://img.shields.io/badge/postgresql-16-336791)
+![TypeScript](https://img.shields.io/badge/typescript-5-3178C6)
 
 # Portal NTB — CMS Multi-Tenant para Portais de Notícias
 
@@ -30,14 +36,16 @@ Portal NTB é um **CMS de notícias SaaS** desenvolvido para atender múltiplos 
 - [14. Multiportal (Multi-Tenancy)](#14-multiportal-multi-tenancy)
 - [15. API](#15-api)
 - [16. Segurança](#16-segurança)
-- [17. Performance](#17-performance)
-- [18. Escalabilidade](#18-escalabilidade)
-- [19. Convenções](#19-convenções)
-- [20. Boas Práticas](#20-boas-práticas)
-- [21. Roadmap](#21-roadmap)
-- [22. Decisões Arquiteturais (ADR)](#22-decisões-arquiteturais-adr)
-- [23. Começando](#23-começando)
-- [24. Contribuição](#24-contribuição)
+- [17. Testes](#17-testes)
+- [18. Performance](#18-performance)
+- [19. Escalabilidade](#19-escalabilidade)
+- [20. Convenções](#20-convenções)
+- [21. Boas Práticas](#21-boas-práticas)
+- [22. Roadmap](#22-roadmap)
+- [23. Decisões Arquiteturais (ADR)](#23-decisões-arquiteturais-adr)
+- [24. Começando](#24-começando)
+- [📈 Escalabilidade](./ESCALABILIDADE.md)
+- [25. Contribuição](#25-contribuição)
 
 ---
 
@@ -237,19 +245,32 @@ sequenceDiagram
     R2-->>SP: Presigned URL (válida 15min)
     SP-->>S: { uploadUrl, key, imageUrl }
     S-->>API: Resultado
+    API-->>R: create({ key, size, mimeType, userId, portalId })
+    R->>DB: INSERT image
+    DB-->>R: OK
     API-->>C: { uploadUrl, key, imageUrl }
 
     Note over C,R2: Upload direto browser → R2
     C->>R2: PUT { uploadUrl } + file
     R2-->>C: 200 OK
-
-    Note over C,DB: Registro no banco
-    C->>API: POST /news { cover_image_key: key }
-    API->>R: createImage(key)
-    R->>DB: INSERT image
-    DB-->>R: OK
-    R-->>API: Pronto
 ```
+
+### Endpoints de Upload
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `POST` | `/upload/presigned` | Gera URL assinada para upload direto (browser → R2) e salva metadados |
+| `GET` | `/upload/images` | Lista imagens do portal (limit 50, ordenado por data descendente) |
+| `PATCH` | `/upload/images/:id` | Atualiza `alt` e `caption` da imagem |
+| `DELETE` | `/upload/images/:id` | Remove imagem do R2 e banco. **Bloqueia** se vinculada a notícias. |
+
+### Modal de Upload (Frontend)
+
+A página `/uploads` (admin) oferece:
+- Grid de imagens clicável
+- Modal (`ImageDetailModal`) com preview ampliado, metadados, edição de `alt`/`caption`
+- Exclusão com confirmação via `AlertDialog`
+- Loading states, toast de feedback, atualização de estado local sem recarregar
 
 ### Comunicação Frontend ↔ Backend
 
@@ -1470,7 +1491,48 @@ graph TD
 
 ---
 
-## 17. Performance
+## 17. Testes
+
+> ⚠️ **Status atual:** Crítico — cobertura de **0%**. Esta é a maior fragilidade do projeto.
+
+### Stack de Testes
+
+| Ferramenta | Backend | Frontend |
+|------------|:-------:|:--------:|
+| **Vitest** | ✅ Instalado (v1.6) | ❌ Não instalado |
+| **@testing-library/react** | — | ❌ Não instalado |
+| **Playwright/Cypress** | ❌ Não instalado | ❌ Não instalado |
+
+### O que precisa ser testado (urgência)
+
+| Prioridade | Área | O que testar |
+|:----------:|------|-------------|
+| 🔴 | `utils/` (slug, error, hash) | Funções puras — mais fácil, maior ROI |
+| 🔴 | Schemas Zod (news, auth, category) | Validação de entrada |
+| 🔴 | AuthService (login, refresh, logout) | Ciclo de autenticação completo |
+| 🟡 | NewsService (CRUD, permissões) | Regras de negócio e RBAC |
+| 🟡 | ApiClient (`lib/api.ts`) | Refresh automático, fallbacks |
+| 🟢 | Componentes (NewsCard, EmptyState) | Renderização condicional |
+| 🟢 | E2E (Playwright) | Fluxo: login → criar → publicar → ver |
+
+### Arquitetura favorável a testes
+
+As classes de serviço aceitam repositórios por **injeção de dependência** via construtor:
+
+```typescript
+class NewsService {
+  constructor(
+    private newsRepository: INewsRepository = defaultNewsRepo,
+    private categoryRepository: ICategoryRepository = defaultCategoryRepo,
+  ) {}
+}
+```
+
+Isso permite passar **mocks** nos testes sem modificar o código de produção. O setup de banco de teste pode usar Docker Compose com PostgreSQL efêmero + Prisma migrations.
+
+---
+
+## 18. Performance
 
 ### Estratégias
 
@@ -1498,7 +1560,39 @@ graph TD
 
 ---
 
-## 18. Escalabilidade
+## 19. Escalabilidade
+
+> 📖 **Guia completo e detalhado em [`ESCALABILIDADE.md`](./ESCALABILIDADE.md)** com planos de ação, custos, arquivos para alterar e métricas de sucesso.
+
+### Resumo Rápido
+
+| Cenário | Usuários/dia | Esforço | Custo/mês |
+|:-------:|:------------:|:-------:|:---------:|
+| 🏁 **Início** | ~1.000 | Zero | ~$15-25 |
+| 🟢 **Crescendo** | ~20.000 | ~2h | ~$30-50 |
+| 🟡 **Sucesso** | ~50.000 | ~5h | ~$80-130 |
+| 🟠 **Grande** | ~100.000 | ~7h | ~$130-200 |
+
+### O que fazer em cada cenário
+
+**20k/dia** — Apenas ajustes de config:
+- Aumentar rate limit (100 → 500 req/min)
+- Substituir `Map` por `lru-cache` nas views
+- Aumentar pool do Prisma (10 → 20+ conexões)
+- Criar índice composto `(portal_id, status, published_at DESC)`
+
+**50k/dia** — Adicionar Redis + Cloudflare:
+- Tudo do 20k + cache de queries públicas com Redis
+- Pool de 50 conexões
+- Cloudflare CDN (plano Free) na frente do site
+- Compressão Brotli no Nginx
+
+**100k/dia** — Múltiplas instâncias:
+- Tudo do 50k + 2-3 instâncias do backend
+- pgBouncer para pool de conexões
+- Cloudflare Page Rules para cache de HTML
+
+> ⚡ **O Portal NTB já está preparado para escalar.** A arquitetura em camadas com injeção de dependência permite adicionar Redis e cache sem refatorar código de negócio.
 
 ### Estágios de Escala
 
@@ -1562,7 +1656,7 @@ graph TD
 
 ---
 
-## 19. Convenções
+## 20. Convenções
 
 ### Nomenclatura
 
@@ -1601,7 +1695,7 @@ main         → produção
 
 ---
 
-## 20. Boas Práticas
+## 21. Boas Práticas
 
 ### Adotadas no Projeto
 
@@ -1618,23 +1712,42 @@ main         → produção
 | **Principle of Least Privilege** | RBAC | Cada um só faz o que precisa |
 | **Separation of Concerns** | Front/Back | API desacoplada |
 
-### Recomendadas (futuro)
+### Implementadas
+
+| Prática | Status | Detalhe |
+|---------|:------:|---------|
+| **CI/CD** (GitHub Actions) | ✅ | Lint, typecheck, build, Docker push GHCR |
+| **Linting** (ESLint) | ✅ | Backend (eslint 8) + Frontend (eslint 9 flat config) |
+| **OpenAPI/Swagger** | ✅ | `/docs` com @fastify/swagger |
+| **Health checks** | ✅ | `GET /api/v1/health` + Docker healthcheck |
+| **Structured logging** | ✅ | Pino + pino-pretty em dev |
+| **API Routes** (Next.js) | ✅ | Server Components para SEO |
+
+### Recomendadas (curto prazo)
+
+| Prática | Impacto | Esforço |
+|---|---|---|
+| **Testes unitários** (Vitest) | 🔴 Confiança em refatorações | ~2h (utils + schemas) |
+| **Testes de integração** | 🔴 Valida fluxo completo | ~4h |
+| **Slug Unicode** | 🔴 Previne erro 500 | ~15min |
+| **lru-cache** para views | 🟡 Previne OOM | ~15min |
+| **Prettier** | 🟡 Consistência de código | ~10min |
+| **.editorconfig** | 🟡 Consistência entre editores | ~5min |
+
+### Recomendadas (médio/longo prazo)
 
 | Prática | Impacto |
 |---|---|
-| **Testes unitários** (Vitest) | Confiança em refatorações |
-| **Testes de integração** | Valida fluxo completo |
-| **CI/CD** (GitHub Actions) | Deploy automático |
-| **Linting** (ESLint + Prettier) | Consistência de código |
 | **Husky + lint-staged** | Qualidade no commit |
-| **OpenAPI/Swagger** | Documentação viva |
-| **Health checks** | Monitoramento |
-| **Structured logging** | Debug em produção |
 | **Sentry/APM** | Erros em tempo real |
+| **Playwright E2E** | Fluxo crítico automatizado |
+| **cobertura 80% gate no CI** | Barreira de qualidade |
+| **Rate limit por email + IP** | Segurança contra botnet |
+| **Migrations com CONCURRENTLY** | Zero downtime em produção |
 
 ---
 
-## 21. Roadmap
+## 22. Roadmap
 
 ### v1.0.0 (Atual) — MVP
 
@@ -1685,7 +1798,7 @@ main         → produção
 
 ---
 
-## 22. Decisões Arquiteturais (ADR)
+## 23. Decisões Arquiteturais (ADR)
 
 ### ADR-001: Fastify vs Express
 
@@ -1854,7 +1967,7 @@ main         → produção
 
 ---
 
-## 23. Começando
+## 24. Começando
 
 ### Pré-requisitos
 
@@ -1920,7 +2033,7 @@ docker compose exec backend npx prisma generate
 
 ---
 
-## 24. Contribuição
+## 25. Contribuição
 
 ### Como Contribuir
 
