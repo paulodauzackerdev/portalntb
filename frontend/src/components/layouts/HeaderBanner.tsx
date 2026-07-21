@@ -34,8 +34,8 @@ export function HeaderBanner({ imageUrl, alt, linkUrl }: HeaderBannerProps) {
             alt={alt || "Anúncio"}
             width={728}
             height={90}
-            className="max-w-full h-auto"
-            style={{ maxHeight: "90px", width: "auto" }}
+            className="max-w-full"
+            style={{ maxHeight: "90px", objectFit: "contain" }}
           />
         </a>
       ) : (
@@ -44,8 +44,8 @@ export function HeaderBanner({ imageUrl, alt, linkUrl }: HeaderBannerProps) {
           alt={alt || "Anúncio"}
           width={728}
           height={90}
-          className="max-w-full h-auto"
-          style={{ maxHeight: "90px", width: "auto" }}
+          className="max-w-full"
+          style={{ maxHeight: "90px", objectFit: "contain" }}
           onClick={handleClick}
         />
       )}
