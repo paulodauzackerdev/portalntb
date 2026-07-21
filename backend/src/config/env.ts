@@ -8,6 +8,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(3001),
   DATABASE_URL: z.string(),
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
+  COOKIE_SECRET: z.string().min(32, "COOKIE_SECRET must be at least 32 characters").optional(),
   JWT_EXPIRES_IN: z.string().default("15m"),
   JWT_REFRESH_EXPIRES_IN: z.string().default("7d"),
   R2_ENDPOINT: z.string().optional(),

@@ -38,7 +38,12 @@ export async function buildApp() {
   await app.register(cors, corsConfig);
 
   // CSRF protection (após cors, antes do helmet)
-  await app.register(csrf);
+  // API REST com JWT no header Authorization não é vulnerável a CSRF clássico
+  // (o navegador não envia header Authorization automaticamente entre origens).
+  // Registramos apenas para expor reply.generateCsrf() se necessário no futuro.
+  await app.register(csrf, {
+    cookieOpts: { signed: true },
+  });
 
   await app.register(helmet, {
     contentSecurityPolicy: {
@@ -75,7 +80,7 @@ export async function buildApp() {
   });
 
   await app.register(cookie, {
-    secret: crypto.randomBytes(32).toString("hex"),
+    secret: env.COOKIE_SECRET || crypto.randomBytes(32).toString("hex"),
   });
 
   await app.register(rateLimit, {
