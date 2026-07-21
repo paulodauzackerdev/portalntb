@@ -31,6 +31,9 @@ src/
 - URL pública é resolvida pelo `StorageProvider.getPublicUrl(key)` na hora da resposta
 - Upload é feito via presigned URL (browser → R2, sem passar pelo servidor)
 - `cover_image` (URL legada) mantido como fallback — prefira `cover_image_key`
+- Ao **deletar** uma imagem, o sistema verifica se há notícias vinculadas via `coverImageKey`. Se sim, bloqueia a exclusão com erro 400.
+- Metadados (`alt`, `caption`) são editáveis via `PATCH /upload/images/:id`
+- O registro da imagem é criado **no momento da geração da presigned URL**, não após o upload real. Isso significa que registros órfãos podem existir se o upload falhar.
 
 ### Modelos
 
