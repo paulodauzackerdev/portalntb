@@ -33,6 +33,10 @@ export class ImageRepository implements IImageRepository {
     });
   }
 
+  async findNewsCountByImageKey(key: string) {
+    return prisma.news.count({ where: { coverImageKey: key } });
+  }
+
   async update(id: string, data: { alt?: string | null; caption?: string | null }) {
     return prisma.image.update({
       where: { id },

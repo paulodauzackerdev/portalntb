@@ -123,6 +123,7 @@ export interface IImageRepository {
   }): Promise<Prisma.ImageGetPayload<{}>>;
   findById(id: string): Promise<Prisma.ImageGetPayload<{}> | null>;
   findByPortal(portalId: string): Promise<Prisma.ImageGetPayload<{}>[]>;
+  findNewsCountByImageKey(key: string): Promise<number>;
   update(id: string, data: { alt?: string | null; caption?: string | null }): Promise<Prisma.ImageGetPayload<{}>>;
   delete(id: string): Promise<Prisma.ImageGetPayload<{}>>;
 }
