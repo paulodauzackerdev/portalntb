@@ -10,14 +10,10 @@ import { Card } from "../../../components/ui/card";
 import { Spinner } from "../../../components/ui/Spinner";
 import { EmptyState } from "../../../components/ui/EmptyState";
 import { toast } from "../../../components/ui/use-toast";
-
-interface UploadedImage {
-  id: string;
-  url: string;
-  size: number;
-  mimeType: string;
-  created_at: string;
-}
+import {
+  ImageDetailModal,
+  type UploadedImage,
+} from "./_components/ImageDetailModal";
 
 export default function AdminUploadsPage() {
   const presignedUpload = usePresignedUpload();
@@ -25,6 +21,10 @@ export default function AdminUploadsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Estado do modal de detalhes
+  const [selectedImage, setSelectedImage] = useState<UploadedImage | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   // Carregar imagens da API
   useEffect(() => {
@@ -53,9 +53,9 @@ export default function AdminUploadsPage() {
       });
       await uploadFileToPresignedUrl(presigned.uploadUrl, file);
 
-      // Adicionar ao state local
+      // Adicionar ao state local — usar o ID real do banco
       const newImage: UploadedImage = {
-        id: presigned.key,
+        id: presigned.id,
         url: presigned.imageUrl,
         size: file.size,
         mimeType: file.type,
@@ -118,25 +118,55 @@ export default function AdminUploadsPage() {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {images.map((img) => (
-            <Card key={img.id} className="overflow-hidden">
+            <Card
+              key={img.id}
+              className="overflow-hidden cursor-pointer transition-all hover:shadow-md focus-visible:outline-none"
+              onClick={() => {
+                setSelectedImage(img);
+                setModalOpen(true);
+              }}
+            >
               <div className="aspect-square bg-gray-100 relative">
                 <Image
                   src={img.url}
-                  alt=""
+                  alt={img.alt ?? ""}
                   fill
                   sizes="150px"
                   className="object-cover"
                 />
               </div>
-              <div className="p-2">
+              <div className="p-2 space-y-1">
                 <p className="text-xs text-gray-500 truncate">
                   {(img.size / 1024).toFixed(0)} KB
                 </p>
+                {img.alt && (
+                  <p className="text-xs text-gray-400 truncate">
+                    {img.alt}
+                  </p>
+                )}
               </div>
             </Card>
           ))}
         </div>
       )}
+
+      {/* Modal de detalhes da imagem */}
+      <ImageDetailModal
+        image={selectedImage}
+        open={modalOpen}
+        onOpenChange={(open) => {
+          setModalOpen(open);
+          if (!open) setSelectedImage(null);
+        }}
+        onUpdate={(updated) => {
+          setImages((prev) =>
+            prev.map((img) => (img.id === updated.id ? updated : img))
+          );
+        }}
+        onDelete={(id) => {
+          setImages((prev) => prev.filter((img) => img.id !== id));
+        }}
+      />
     </div>
   );
 }

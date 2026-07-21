@@ -122,6 +122,8 @@ export interface PresignedUploadPayload {
 }
 
 export interface PresignedUploadResult {
+  /** ID UUID do registro no banco */
+  id: string;
   uploadUrl: string;
   /** Key relativa no storage (ex: "news-images/originals/2026/07/uuid.webp") */
   key: string;
