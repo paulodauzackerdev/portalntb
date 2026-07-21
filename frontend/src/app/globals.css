@@ -1,6 +1,19 @@
 @import "tailwindcss";
 @plugin "tailwindcss-animate";
 
+/*
+ * No Tailwind v4, a classe `border` usa `currentColor` como padrão,
+ * o que faz bordas aparecerem pretas. Este @base redefine para usar
+ * a variável --border do tema (cinza claro #e5e7eb).
+ */
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--border, #e5e7eb);
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
