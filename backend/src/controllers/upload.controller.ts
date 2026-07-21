@@ -22,8 +22,8 @@ export class UploadController {
       data.size
     );
 
-    // Salvar metadados da imagem no banco
-    await this.imageRepository.create({
+    // Salvar metadados da imagem no banco e retornar o ID gerado
+    const image = await this.imageRepository.create({
       key: result.key,
       size: data.size,
       mimeType: data.contentType,
@@ -31,7 +31,10 @@ export class UploadController {
       portalId: user.portal_id,
     });
 
-    return sendSuccess(reply, result);
+    return sendSuccess(reply, {
+      ...result,
+      id: image.id,
+    });
   }
 
   async list(request: FastifyRequest, reply: FastifyReply) {

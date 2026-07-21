@@ -82,6 +82,15 @@ export class UploadService {
       throw forbidden("Você só pode excluir imagens enviadas por você");
     }
 
+    // Verificar se a imagem está vinculada a alguma notícia
+    const newsCount = await this.imageRepository.findNewsCountByImageKey(image.key);
+    if (newsCount > 0) {
+      const msg = newsCount === 1
+        ? "Esta imagem está sendo usada em 1 notícia. Remova o vínculo antes de excluir."
+        : `Esta imagem está sendo usada em ${newsCount} notícias. Remova o vínculo antes de excluir.`;
+      throw badRequest(msg);
+    }
+
     // Deleta do R2 e do banco
     await storageProvider.delete(image.key).catch(() => {});
     await this.imageRepository.delete(id);
