@@ -567,7 +567,7 @@ async function main() {
   console.log(`   Notícias:    ${counts.news}`);
   console.log(`   Tags assoc.: ${counts.newsTags}`);
   console.log("=".repeat(50));
-  console.log("\n📋 Credenciais (senha definida via SEED_PASSWORD ou 'temp-admin-change-me-please'):");
+  console.log("\n📋 Credenciais (senha definida via SEED_PASSWORD no .env):");
   console.log("   Admin:      admin@portal.com");
   console.log("   Editor:     editor@portal.com");
   console.log("   Jornalista: jornalista@portal.com");

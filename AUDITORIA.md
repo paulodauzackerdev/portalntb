@@ -10,11 +10,19 @@
 |:---------:|:-----------:|:-----------:|:------:|:------:|:--------------:|
 | **6.0** | **7.0** | **6.0** | **6.5** | **4.0** | **5.0** |
 
-**38/45 problemas resolvidos (84%)**
+**41/45 problemas resolvidos (91%)**
 
 ---
 
 ## ✅ Corrigidos
+
+### Etapa 2 — Integridade + Upload (21/07/2026)
+- ✅ **Transação na deleção R2** — `news.service.ts` update() e delete() usam `$transaction`
+- ✅ **Transação nas tags** — `update()` envelopa deleção/recriação de tags + update na mesma transação
+- ✅ **Banner deleta imagem antiga** — `banner.upsert()` remove imagem anterior do R2 se key mudou
+- ✅ **DELETE /upload/images/:id** — novo endpoint para remover imagens (R2 + banco)
+- ✅ **PATCH /upload/images/:id** — novo endpoint para atualizar `alt` e `caption`
+- ✅ **GET /upload/images** — agora inclui `alt` e `caption` na resposta
 
 ### Etapa 1 — Segurança (21/07/2026)
 - ✅ **Cookie secret** — separado do JWT (`COOKIE_SECRET` no `.env`)
@@ -33,17 +41,14 @@
 
 ---
 
-## 🚨 Pendentes (7)
+## 🚨 Pendentes (4)
 
 | # | Gravidade | Arquivo | Problema |
 |---|-----------|---------|----------|
-| 1 | 🔴 | `services/news.service.ts:271-336` | Deleção de imagem R2 **fora de transação** — inconsistência storage↔banco |
-| 2 | 🔴 | `controllers/news.controller.ts:12-13` | View cache em `Map` global — **OOM** possível, não compartilhado entre workers |
-| 3 | 🟡 | `services/news.service.ts:276-283` | Tags atualizadas **fora de transação** — perda se `createMany` falhar |
-| 4 | 🟡 | `routes/auth.routes.ts:17` | Rate limit **só por IP** — botnet 1000 IPs = 5000 tentativas/min |
-| 5 | 🟡 | `utils/slug.ts:6-7` | Slug **quebra Unicode** (japonês/árabe/emoji → `""` → erro 500) |
-| 6 | 🟡 | `services/banner.service.ts:85-104` | Banner upsert **não deleta** imagem antiga do R2 — objetos órfãos |
-| 7 | 🟡 | `services/auth.service.ts:66-72` | Refresh token roubado: access tokens vigentes **não invalidados** (janela 15min) |
+| 1 | 🔴 | `controllers/news.controller.ts:12-13` | View cache em `Map` global — **OOM** possível, não compartilhado entre workers |
+| 2 | 🟡 | `routes/auth.routes.ts:17` | Rate limit **só por IP** — botnet 1000 IPs = 5000 tentativas/min |
+| 3 | 🟡 | `utils/slug.ts:6-7` | Slug **quebra Unicode** (japonês/árabe/emoji → `""` → erro 500) |
+| 4 | 🟡 | `services/auth.service.ts:66-72` | Refresh token roubado: access tokens vigentes **não invalidados** (janela 15min) |
 
 ### ⚠ Potenciais
 | Arquivo | Problema |
@@ -61,7 +66,6 @@
 
 | Etapa | Itens | Esforço |
 |-------|-------|---------|
-| **2** — Integridade | Transação deleção R2 + tags + banner antigo | ~20min |
 | **3** — Performance | `lru-cache` views + slug Unicode + rate limit email | ~15min |
 | **4** — Finos | `tokenVersion` + refresh fingerprint + DELETE 204 + filtro servidor | ~20min |
 
