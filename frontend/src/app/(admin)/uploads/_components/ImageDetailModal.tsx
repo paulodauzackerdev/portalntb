@@ -23,7 +23,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
-import { Spinner } from "@/components/ui/Spinner";
 import { useUpdateImage, useDeleteImage } from "@/hooks/useUpload";
 import { Trash2, Save, Image as ImageIcon } from "lucide-react";
 
@@ -82,22 +81,23 @@ export function ImageDetailModal({
   const updateMutation = useUpdateImage();
   const deleteMutation = useDeleteImage();
 
-  // Estados dos campos editáveis
-  const [alt, setAlt] = useState("");
-  const [caption, setCaption] = useState("");
+  // Estados dos campos editáveis — inicializados diretamente de image
+  const [alt, setAlt] = useState(image?.alt ?? "");
+  const [caption, setCaption] = useState(image?.caption ?? "");
   const [isDirty, setIsDirty] = useState(false);
 
   // Confirmação de exclusão
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  // Sincronizar campos quando a imagem mudar
+  // Resetar estados locais quando image.id mudar — necessário para sincronizar com imagem selecionada
   useEffect(() => {
-    if (image) {
-      setAlt(image.alt ?? "");
-      setCaption(image.caption ?? "");
-      setIsDirty(false);
-    }
-  }, [image]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setAlt(image?.alt ?? "");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCaption(image?.caption ?? "");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsDirty(false);
+  }, [image?.id]);
 
   // Marcar como alterado quando o usuário editar
   function handleAltChange(value: string) {
