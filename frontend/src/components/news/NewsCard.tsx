@@ -33,7 +33,7 @@ export function NewsCard({ news, index = 0 }: { news: NewsItem; index?: number }
       <Link href={`/noticias/${news.slug}`} className="group block h-full">
         <article className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 h-full flex flex-col">
           {/* Image */}
-          <div className="aspect-[16/9] overflow-hidden bg-gray-100">
+          <div className="aspect-[16/9] overflow-hidden bg-gray-100 relative">
             {coverUrl ? (
               <Image
                 src={coverUrl}
