@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Search, Menu, X, Facebook, Instagram } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -24,6 +24,7 @@ interface HeaderProps {
 export function Header({ categories, portalName, portalTagline, banner }: HeaderProps) {
   const [firstWord, rest] = splitPortalName(portalName);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const formattedDate = new Date().toLocaleDateString("pt-BR", {
     weekday: "long",
     day: "numeric",
@@ -31,103 +32,124 @@ export function Header({ categories, portalName, portalTagline, banner }: Header
     year: "numeric",
   });
 
+  useEffect(() => {
+    const handleScroll = () => {
+      // Ativa quando o scroll ultrapassar ~150px (altura estimada da topbar + masthead)
+      setScrolled(window.scrollY > 150);
+    };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
-      {/* Top bar - data + redes sociais + entrar */}
-      <div className="hidden lg:block bg-primary text-primary-foreground">
-        <div className="max-w-7xl mx-auto px-4 py-1.5 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-4">
-            <span suppressHydrationWarning>
-              {formattedDate || new Date().toLocaleDateString("pt-BR", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
-            </span>
-            <div className="flex items-center gap-3">
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary-foreground/70 hover:text-primary-foreground transition-colors"
-                aria-label="Instagram"
-              >
-                <Instagram className="w-3.5 h-3.5" />
-              </a>
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary-foreground/70 hover:text-primary-foreground transition-colors"
-                aria-label="Facebook"
-              >
-                <Facebook className="w-3.5 h-3.5" />
-              </a>
-              <a
-                href="https://x.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary-foreground/70 hover:text-primary-foreground transition-colors"
-                aria-label="X (Twitter)"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  className="w-3.5 h-3.5 fill-current"
-                  aria-hidden="true"
+    <>
+      {/* ── Top bar + Masthead ── somem ao scroll ── */}
+      <header
+        className={`transition-all duration-500 ease-out ${
+          scrolled ? "-translate-y-full opacity-0" : "translate-y-0 opacity-100"
+        }`}
+      >
+        {/* Top bar - data + redes sociais + entrar */}
+        <div className="hidden lg:block bg-primary text-primary-foreground">
+          <div className="max-w-7xl mx-auto px-4 py-1.5 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-4">
+              <span suppressHydrationWarning>
+                {formattedDate || new Date().toLocaleDateString("pt-BR", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </span>
+              <div className="flex items-center gap-3">
+                <a
+                  href="https://instagram.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary-foreground/70 hover:text-primary-foreground transition-colors"
+                  aria-label="Instagram"
                 >
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                </svg>
-              </a>
+                  <Instagram className="w-3.5 h-3.5" />
+                </a>
+                <a
+                  href="https://facebook.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary-foreground/70 hover:text-primary-foreground transition-colors"
+                  aria-label="Facebook"
+                >
+                  <Facebook className="w-3.5 h-3.5" />
+                </a>
+                <a
+                  href="https://x.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary-foreground/70 hover:text-primary-foreground transition-colors"
+                  aria-label="X (Twitter)"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="w-3.5 h-3.5 fill-current"
+                    aria-hidden="true"
+                  >
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                </a>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-primary-foreground/60">⏱ Última atualização: agora</span>
+              <Link
+                href="/login"
+                className="font-medium text-primary-foreground/90 hover:text-primary-foreground transition-colors"
+              >
+                Entrar
+              </Link>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-primary-foreground/60">⏱ Última atualização: agora</span>
-            <Link
-              href="/login"
-              className="font-medium text-primary-foreground/90 hover:text-primary-foreground transition-colors"
-            >
-              Entrar
+        </div>
+
+        {/* Masthead - nome do jornal + banner */}
+        <div className="border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+            <Link href="/" className="group shrink-0">
+              <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 group-hover:text-blue-700 transition-colors">
+                <span className="text-blue-700">{firstWord}</span>{rest ? ` ${rest}` : ""}
+              </h1>
+              <p className="text-[10px] uppercase tracking-[0.3em] text-gray-400 mt-0.5">
+                {portalTagline}
+              </p>
             </Link>
+
+            {/* Banner 728x90 ao lado do nome */}
+            {banner && (
+              <HeaderBanner
+                imageUrl={banner.imageUrl}
+                alt={banner.alt}
+                linkUrl={banner.linkUrl}
+              />
+            )}
+
+            {/* Mobile hamburger */}
+            <button
+              onClick={() => setMobileOpen(!mobileOpen)}
+              className="lg:hidden p-2 text-gray-500 hover:text-gray-900"
+            >
+              {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Masthead - nome do jornal + banner */}
-      <div className="border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="group shrink-0">
-            <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 group-hover:text-blue-700 transition-colors">
-              <span className="text-blue-700">{firstWord}</span>{rest ? ` ${rest}` : ""}
-            </h1>
-            <p className="text-[10px] uppercase tracking-[0.3em] text-gray-400 mt-0.5">
-              {portalTagline}
-            </p>
-          </Link>
-
-          {/* Banner 728x90 ao lado do nome */}
-          {banner && (
-            <HeaderBanner
-              imageUrl={banner.imageUrl}
-              alt={banner.alt}
-              linkUrl={banner.linkUrl}
-            />
-          )}
-
-          {/* Mobile hamburger */}
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="lg:hidden p-2 text-gray-500 hover:text-gray-900"
-          >
-            {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
-      </div>
-
-      {/* Navigation + Buscar */}
-      <nav className="hidden lg:block border-b border-gray-200">
+      {/* ── Navigation (sticky) ── fica fixo no topo ao scrollar ── */}
+      <nav
+        className={`sticky top-0 z-50 bg-white border-b border-gray-200 transition-shadow duration-300 ${
+          scrolled ? "shadow-md" : "shadow-none"
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
-          <ul className="flex items-center gap-1 -mb-px">
+          <ul className="flex items-center gap-1">
             <li>
               <Link
                 href="/"
@@ -157,14 +179,14 @@ export function Header({ categories, portalName, portalTagline, banner }: Header
         </div>
       </nav>
 
-      {/* Mobile menu */}
+      {/* Mobile menu (abaixo do nav sticky) */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden border-b border-gray-200 overflow-hidden bg-white"
+            className="lg:hidden border-b border-gray-200 overflow-hidden bg-white sticky top-[49px] z-40"
           >
             <div className="px-4 py-3 space-y-1">
               <Link
@@ -204,6 +226,6 @@ export function Header({ categories, portalName, portalTagline, banner }: Header
           </motion.div>
         )}
       </AnimatePresence>
-    </header>
+    </>
   );
 }
