@@ -120,14 +120,16 @@ export function NewsForm({ newsId }: NewsFormProps) {
         is_breaking: news.is_breaking,
       });
       const key = news.cover_image_key || null;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCoverImageKey(key);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCoverImagePreview(news.cover_image_url || news.cover_image || key);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCoverImageAlt(news.cover_image_alt || "");
     }
-  }, [news, reset]);
+  }, [news?.id, reset]);
 
   // Sincronizar conteúdo do editor quando a notícia carregar
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (news?.content && editor) {
       editor.commands.setContent(news.content);
@@ -368,7 +370,7 @@ export function NewsForm({ newsId }: NewsFormProps) {
           ) : (
             <label className="flex items-center justify-center h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 transition-colors">
               <div className="text-center">
-                <Image className="w-6 h-6 text-gray-400 mx-auto mb-1" />
+                <Image className="w-6 h-6 text-gray-400 mx-auto mb-1" aria-hidden="true" />
                 <span className="text-xs text-gray-500">
                   {uploading ? "Enviando..." : "Clique para upload"}
                 </span>
