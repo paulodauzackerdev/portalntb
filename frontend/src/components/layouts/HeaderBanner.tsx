@@ -34,7 +34,7 @@ export function HeaderBanner({ imageUrl, alt, linkUrl }: HeaderBannerProps) {
             alt={alt || "Anúncio"}
             width={728}
             height={90}
-            className="max-w-full"
+            className="max-w-full transition-all duration-300 hover:scale-105 hover:brightness-110"
             style={{ maxHeight: "90px", objectFit: "contain" }}
           />
         </a>
