@@ -38,7 +38,7 @@ async function getActiveBanner(): Promise<BannerData | null> {
 
 async function getFeaturedNews(): Promise<NewsItem[]> {
   try {
-    const res = await apiGet<NewsItem[]>("/news", { status: "PUBLISHED", limit: 3 });
+    const res = await apiGet<NewsItem[]>("/news", { status: "PUBLISHED", is_featured: "true", limit: 20 });
     return res.data || [];
   } catch {
     return [];
@@ -56,7 +56,7 @@ async function getBreakingNews(): Promise<NewsItem[]> {
 
 async function getLatestNews(): Promise<NewsItem[]> {
   try {
-    const res = await apiGet<NewsItem[]>("/news", { status: "PUBLISHED", limit: 9 });
+    const res = await apiGet<NewsItem[]>("/news", { status: "PUBLISHED", limit: 20 });
     return res.data || [];
   } catch {
     return [];
@@ -72,6 +72,11 @@ export default async function HomePage() {
     getBreakingNews(),
     getLatestNews(),
   ]);
+
+  const hasFeatured = featured.length > 0;
+  const allNews = hasFeatured ? featured : latest;
+  const heroNews = allNews.slice(0, 4);
+  const gridNews = allNews.slice(4);
 
   return (
     <>
@@ -103,9 +108,9 @@ export default async function HomePage() {
               </div>
             </div>
           )}
-          <HeroSection news={featured.length > 0 ? featured : latest.slice(0, 4)} />
+          <HeroSection news={heroNews} />
           <div className="mt-10 lg:mt-12">
-            <NewsGrid news={latest.slice(4)} title="Últimas Notícias" />
+            <NewsGrid news={gridNews} title="Últimas Notícias" />
           </div>
         </div>
       </main>
