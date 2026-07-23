@@ -15,6 +15,9 @@ interface DataTableProps<T> {
   onRowClick?: (item: T) => void
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyRecord = Record<string, any>
+
 export function DataTable<T extends { id?: string }>({
   columns,
   data,
@@ -49,7 +52,7 @@ export function DataTable<T extends { id?: string }>({
           ) : (
             data.map((item, index) => (
               <tr
-                key={(item as any).id || index}
+                key={(item as AnyRecord).id || index}
                 className={cn(
                   "border-b transition-colors hover:bg-muted/50",
                   onRowClick && "cursor-pointer"
@@ -61,7 +64,7 @@ export function DataTable<T extends { id?: string }>({
                     key={col.key}
                     className={cn("p-2 align-middle", col.className)}
                   >
-                    {col.render ? col.render(item) : (item as any)[col.key]?.toString() || "-"}
+                    {col.render ? col.render(item) : (item as AnyRecord)[col.key]?.toString() || "-"}
                   </td>
                 ))}
               </tr>
