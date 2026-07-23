@@ -40,9 +40,8 @@ export default async function HomePage() {
   ]);
 
   const hasFeatured = featured.length > 0;
-  const allNews = hasFeatured ? featured : latest;
-  const heroNews = allNews.slice(0, 4);
-  const gridNews = allNews.slice(4);
+  const heroNews = hasFeatured ? featured : latest.slice(0, 4);
+  const gridNews = hasFeatured ? latest : latest.slice(4);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6 lg:py-8">
